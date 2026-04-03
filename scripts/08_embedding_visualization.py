@@ -49,12 +49,52 @@ UMAP_NEIGHBORS = 15
 UMAP_MIN_DIST = 0.1
 RANDOM_STATE = 42
 
+# ── IEEE Color Palette ──────────────────────────────────────────────────────
+# Based on standard IEEE publication color guidelines:
+#   #0072BD  IEEE blue       #D95319  orange-red
+#   #EDB120  gold            #7E2F8E  purple
+#   #77AC30  green           #4DBEEE  light blue
+#   #A2142F  dark red        #808080  neutral gray
+
 LABEL_COLORS = {
-    'antimicrobial': '#e74c3c',
-    'antiviral': '#3498db',
-    'antifungal': '#2ecc71',
-    'anticancer': '#9b59b6',
+    'antimicrobial': '#0072BD',   # IEEE blue
+    'antiviral':     '#D95319',   # orange-red
+    'antifungal':    '#77AC30',   # green
+    'anticancer':    '#7E2F8E',   # purple
 }
+
+# Colour for co-occurrence scatter
+_CO_COLORS = {
+    'both':    '#7E2F8E',   # purple
+    'only_a':  '#D95319',   # orange-red
+    'only_b':  '#0072BD',   # IEEE blue
+    'neither': '#CCCCCC',   # light gray
+}
+
+# Dataset bar colours used in the silhouette summary
+_DS_COLORS = {
+    'dbAMP': '#0072BD',   # IEEE blue
+    'DRAMP': '#D95319',   # orange-red
+}
+
+# Global matplotlib style – clean, publication-ready
+plt.rcParams.update({
+    'figure.dpi':        150,
+    'font.family':       'serif',
+    'font.size':         9,
+    'axes.linewidth':    0.8,
+    'axes.edgecolor':    '#333333',
+    'axes.grid':         True,
+    'grid.color':        '#CCCCCC',
+    'grid.linewidth':    0.5,
+    'grid.alpha':        0.5,
+    'xtick.direction':   'in',
+    'ytick.direction':   'in',
+    'xtick.major.width': 0.8,
+    'ytick.major.width': 0.8,
+    'legend.framealpha': 0.9,
+    'legend.edgecolor':  '#AAAAAA',
+})
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -228,36 +268,41 @@ def _scatter_by_label(ax, coords, label_vec, label_name, color, title):
     neg_mask = ~pos_mask
 
     ax.scatter(coords[neg_mask, 0], coords[neg_mask, 1],
-               c='lightgray', alpha=0.35, s=14, linewidths=0, label=f'no {label_name}')
+               c='#CCCCCC', alpha=0.35, s=14, linewidths=0,
+               label=f'no {label_name}')
     ax.scatter(coords[pos_mask, 0], coords[pos_mask, 1],
-               c=color, alpha=0.65, s=20, linewidths=0, label=f'{label_name} (+)')
+               c=color, alpha=0.70, s=20, linewidths=0,
+               label=f'{label_name} (+)')
 
-    ax.set_title(title, fontsize=10, fontweight='bold')
+    ax.set_title(title, fontsize=9, fontweight='bold')
     ax.set_xlabel('Dim 1', fontsize=8)
     ax.set_ylabel('Dim 2', fontsize=8)
     ax.tick_params(labelsize=7)
-    ax.legend(fontsize=7, loc='lower right')
-    ax.grid(alpha=0.2)
+    ax.legend(fontsize=7, loc='lower right', framealpha=0.9)
 
 
 def _scatter_by_combo(ax, coords, true_labels_df, title):
     combos = true_labels_df.apply(label_combo_name, axis=1).values
     unique_combos = sorted(set(combos))
-    palette = plt.cm.tab20.colors
-    cmap = {c: palette[i % len(palette)] for i, c in enumerate(unique_combos)}
+
+    # IEEE tab-style palette drawn from the standard IEEE set
+    ieee_cycle = [
+        '#0072BD', '#D95319', '#EDB120', '#7E2F8E',
+        '#77AC30', '#4DBEEE', '#A2142F', '#808080',
+    ]
+    cmap = {c: ieee_cycle[i % len(ieee_cycle)] for i, c in enumerate(unique_combos)}
 
     for combo in unique_combos:
         mask = combos == combo
         ax.scatter(coords[mask, 0], coords[mask, 1],
-                   c=[cmap[combo]], alpha=0.6, s=16,
+                   c=[cmap[combo]], alpha=0.65, s=16,
                    linewidths=0, label=f'{combo} (n={mask.sum()})')
 
-    ax.set_title(title, fontsize=10, fontweight='bold')
+    ax.set_title(title, fontsize=9, fontweight='bold')
     ax.set_xlabel('Dim 1', fontsize=8)
     ax.set_ylabel('Dim 2', fontsize=8)
     ax.tick_params(labelsize=7)
-    ax.legend(fontsize=6, loc='lower right', ncol=2)
-    ax.grid(alpha=0.2)
+    ax.legend(fontsize=6, loc='lower right', ncol=2, framealpha=0.9)
 
 
 def plot_single_model(model_name, dataset_name, emb_tsne, emb_umap,
@@ -272,7 +317,7 @@ def plot_single_model(model_name, dataset_name, emb_tsne, emb_umap,
         f't-SNE mean sil: {metrics_tsne.get("mean_sil_true", "N/A")} | '
         f'UMAP mean sil: {metrics_umap.get("mean_sil_true", "N/A")} | '
         f'Subset Acc: {metrics_tsne.get("subset_accuracy_pct", "N/A")}%',
-        fontsize=12, fontweight='bold', y=1.01
+        fontsize=11, fontweight='bold', y=1.01
     )
 
     for col_i, lbl in enumerate(label_cols):
@@ -303,7 +348,7 @@ def plot_three_model_comparison(model_results, dataset_name, output_dir,
     fig, axes = plt.subplots(n_rows, 3, figsize=(18, 5 * n_rows))
     fig.suptitle(
         f'ESM-2 vs ProtBERT vs ProtT5 — t-SNE per-label [{dataset_name}]',
-        fontsize=14, fontweight='bold', y=1.01
+        fontsize=13, fontweight='bold', y=1.01
     )
 
     for row_i, lbl in enumerate(label_cols):
@@ -335,15 +380,17 @@ def plot_pca_variance(model_name, dataset_name, pca, output_dir):
     fig, ax = plt.subplots(figsize=(8, 4))
     cumvar = np.cumsum(pca.explained_variance_ratio_) * 100
     ax.plot(range(1, len(cumvar) + 1), cumvar, 'o-',
-            color='steelblue', linewidth=2, markersize=5)
-    ax.axhline(90, color='red', linestyle='--', alpha=0.6, label='90% variance')
-    ax.axhline(95, color='orange', linestyle='--', alpha=0.6, label='95% varience')
+            color='#0072BD', linewidth=2, markersize=5,
+            markerfacecolor='#0072BD', markeredgecolor='white')
+    ax.axhline(90, color='#D95319', linestyle='--', linewidth=1.2,
+               alpha=0.85, label='90% variance')
+    ax.axhline(95, color='#EDB120', linestyle='--', linewidth=1.2,
+               alpha=0.85, label='95% variance')
     ax.set_xlabel('Number of PCA components', fontsize=10)
     ax.set_ylabel('Cumulative variance (%)', fontsize=10)
     ax.set_title(f'{model_name} [{dataset_name}] — PCA Scree Plot',
-                 fontsize=12, fontweight='bold')
+                 fontsize=11, fontweight='bold')
     ax.legend(fontsize=9)
-    ax.grid(alpha=0.3)
     plt.tight_layout()
     tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}'
     path = os.path.join(output_dir, f'pca_variance_{tag}.png')
@@ -363,14 +410,7 @@ def plot_label_co_occurrence_in_embedding(model_name, dataset_name,
         axes = [axes]
 
     fig.suptitle(f'{model_name} [{dataset_name}] — Label Co-occurrence (UMAP)',
-                 fontsize=12, fontweight='bold')
-
-    pair_colors = {
-        'both': '#8e44ad',
-        'only_a': '#e74c3c',
-        'only_b': '#3498db',
-        'neither': 'lightgray',
-    }
+                 fontsize=11, fontweight='bold')
 
     for ax, (i, j) in zip(axes, pairs):
         la, lb = label_cols[i], label_cols[j]
@@ -379,27 +419,26 @@ def plot_label_co_occurrence_in_embedding(model_name, dataset_name,
 
         for label_key, mask in [
             ('neither', (a == 0) & (b == 0)),
-            ('only_a', (a == 1) & (b == 0)),
-            ('only_b', (a == 0) & (b == 1)),
-            ('both', (a == 1) & (b == 1)),
+            ('only_a',  (a == 1) & (b == 0)),
+            ('only_b',  (a == 0) & (b == 1)),
+            ('both',    (a == 1) & (b == 1)),
         ]:
             if mask.sum() == 0:
                 continue
             legend_lbl = {
-                'both': f'both (n={mask.sum()})',
-                'only_a': f'only {la} (n={mask.sum()})',
-                'only_b': f'only {lb} (n={mask.sum()})',
+                'both':    f'both (n={mask.sum()})',
+                'only_a':  f'only {la} (n={mask.sum()})',
+                'only_b':  f'only {lb} (n={mask.sum()})',
                 'neither': f'neither (n={mask.sum()})',
             }[label_key]
             ax.scatter(emb_umap[mask, 0], emb_umap[mask, 1],
-                       c=pair_colors[label_key], alpha=0.55, s=16,
+                       c=_CO_COLORS[label_key], alpha=0.60, s=16,
                        linewidths=0, label=legend_lbl)
 
-        ax.set_title(f'{la} vs {lb}', fontsize=10, fontweight='bold')
+        ax.set_title(f'{la} vs {lb}', fontsize=9, fontweight='bold')
         ax.set_xlabel('UMAP Dim 1', fontsize=8)
         ax.set_ylabel('UMAP Dim 2', fontsize=8)
         ax.legend(fontsize=7)
-        ax.grid(alpha=0.2)
 
     plt.tight_layout()
     tag = f'{model_name.lower().replace("-", "_")}_{dataset_name.lower()}'
@@ -416,11 +455,10 @@ def plot_mean_silhouette_summary(summary_rows, output_dir):
 
     x = np.arange(len(models))
     width = 0.35
-    ds_colors = {'dbAMP': '#3498db', 'DRAMP': '#e74c3c'}
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     fig.suptitle('Mean Silhouette Score (per-label average) per model',
-                 fontsize=13, fontweight='bold')
+                 fontsize=12, fontweight='bold')
 
     for ax, proj in zip(axes, ['tsne', 'umap']):
         for offset, ds in zip([-width / 2, width / 2], datasets):
@@ -432,17 +470,17 @@ def plot_mean_silhouette_summary(summary_rows, output_dir):
                        else 0.0)
                 vals.append(val)
             bars = ax.bar(x + offset, vals, width,
-                          label=ds, color=ds_colors.get(ds, 'gray'),
-                          alpha=0.8, edgecolor='white')
+                          label=ds,
+                          color=_DS_COLORS.get(ds, '#808080'),
+                          alpha=0.85, edgecolor='white', linewidth=0.8)
             ax.bar_label(bars, fmt='%.3f', fontsize=8, padding=2)
 
-        ax.set_title(f'{proj.upper()} mean silhouette', fontsize=11, fontweight='bold')
+        ax.set_title(f'{proj.upper()} mean silhouette', fontsize=10, fontweight='bold')
         ax.set_xticks(x)
         ax.set_xticklabels(models)
         ax.set_ylabel('Silhouette score')
         ax.legend(title='Dataset', fontsize=9)
         ax.set_ylim([-0.1, 1.0])
-        ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
     path = os.path.join(output_dir, 'silhouette_summary.png')
@@ -527,9 +565,9 @@ if __name__ == '__main__':
     summary_rows = []
 
     pth_map = {
-        'ESM-2': {'dbAMP': ESM2_DBAMP_PTH, 'DRAMP': ESM2_DRAMP_PTH},
-        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH, 'DRAMP': PROTBERT_DRAMP_PTH},
-        'ProtT5': {'dbAMP': PROTT5_DBAMP_PTH, 'DRAMP': PROTT5_DRAMP_PTH},
+        'ESM-2':    {'dbAMP': ESM2_DBAMP_PTH,     'DRAMP': ESM2_DRAMP_PTH},
+        'ProtBERT': {'dbAMP': PROTBERT_DBAMP_PTH,  'DRAMP': PROTBERT_DRAMP_PTH},
+        'ProtT5':   {'dbAMP': PROTT5_DBAMP_PTH,    'DRAMP': PROTT5_DRAMP_PTH},
     }
 
     model_configs = [
