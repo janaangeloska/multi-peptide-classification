@@ -98,79 +98,10 @@ Beyond classification metrics, the project includes two interpretability analyse
 
 ```
 Multi-AMP/
-├── data/
-│   ├── dRAMP/
-│   │   ├── Anticancer_amps.fasta
-│   │   ├── Antifungal_amps.fasta
-│   │   ├── antimicrobial/
-│   │   │   ├── Anti-Gram-_amps.fasta
-│   │   │   ├── Anti-Gram-positive_amps.fasta
-│   │   │   ├── Antibacterial_amps.fasta
-│   │   │   ├── Antimicrobial_amps.fasta
-│   │   │   ├── Antiparasitic_amps.fasta
-│   │   │   └── Insecticidal_amps.fasta
-│   │   └── antiviral/
-│   │       ├── Anti-SARS-CoV-2_amps.fasta
-│   │       └── Antiviral_amps.fasta
-│   ├── dbAMP/
-│   │   ├── antifungal/
-│   │   │   ├── dbAMP_Antifungal_2024.fasta
-│   │   │   └── dbAMP_Antiyeast_2024.fasta
-│   │   ├── antimicrobial/
-│   │   │   ├── dbAMP_AntiGram_n_2024.fasta
-│   │   │   ├── dbAMP_AntiGram_p_2024.fasta
-│   │   │   ├── dbAMP_AntiMRSA_2024.fasta
-│   │   │   ├── dbAMP_Antibacterial_2024.fasta
-│   │   │   ├── dbAMP_Antibiofilm_2024.fasta
-│   │   │   ├── dbAMP_Antimicrobial_2024.fasta
-│   │   │   ├── dbAMP_Antiparasitic_2024.fasta
-│   │   │   ├── dbAMP_Antiprotozoal_2024.fasta
-│   │   │   └── dbAMP_Insecticidal_2024.fasta
-│   │   ├── antiviral/
-│   │   │   ├── dbAMP_AntiHIV_2024.fasta
-│   │   │   └── dbAMP_Antiviral_2024.fasta
-│   │   └── dbAMP_Antitumour_2024.fasta
-│   ├── dramp.csv
-│   ├── dramp_train/val/test.csv
-│   ├── dbamp.csv
-│   └── dbamp_train/val/test.csv
-├── notebooks/
-│   ├── 01_data_preparation.ipynb
-│   ├── 02_exploratory_data_analysis.ipynb
-│   ├── 03_baseline_model.ipynb
-│   └── 07_results_comparison.ipynb
-├── scripts/
-│   ├── 04_run_protbert.py
-│   ├── 05_run_esm2.py
-│   ├── 06_run_prott5.py
-│   ├── 08_embedding_visualization.py
-│   └── 09_error_analysis.py
-├── results/
-│   ├── all_results.csv
-│   ├── baseline_results.png
-│   ├── results_protbert.csv
-│   ├── results_esm2.csv
-│   ├── results_prott5.csv
-│   ├── embedding_viz/
-│   │   ├── embedding_summary.csv
-│   │   ├── embedding_comparison_3models_dramp.png
-│   │   └── embedding_comparison_3models_dbamp.png
-│   ├── error_analysis/
-│   │   ├── metrics_summary.csv
-│   │   ├── fn_rate_heatmap_dramp.png
-│   │   ├── fn_rate_heatmap_dbamp.png
-│   │   ├── per_label_f1_dramp.png
-│   │   └── per_label_f1_dbamp.png
-│   └── training_viz/
-│       ├── protbert_dramp_training.png
-│       ├── protbert_dbamp_training.png
-│       ├── protbert_multilabel_comparison.png
-│       ├── esm2_dramp_training.png
-│       ├── esm2_dbamp_training.png
-│       ├── esm2_multilabel_comparison.png
-│       ├── prott5_dramp_training.png
-│       ├── prott5_dbamp_training.png
-│       └── prott5_comparison.png
+├── data/                # Raw and processed datasets (dRAMP, dbAMP)
+├── notebooks/           # Data prep, EDA, baseline, results analysis
+├── scripts/             # Model training (ProtBERT, ESM2, ProtT5) + utilities
+├── results/             # Metrics, visualizations, and analysis outputs
 └── README.md
 ```
 
