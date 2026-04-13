@@ -8,7 +8,7 @@ Antimicrobial peptides (AMPs) are short amino acid sequences with natural antiba
 
 This project frames peptide function prediction as a multi-label sequence classification task and systematically compares four approaches of increasing complexity: a classical k-mer baseline, and three pre-trained protein language models (ProtBERT, ESM-2, ProtT5). All models are evaluated on two independently curated repositories (DRAMP and dbAMP) under identical experimental conditions, with sequence-identity-based data splits to prevent leakage. Each pLM-based model is trained twice - once with standard Binary Cross-Entropy (BCE) and once with Asymmetric Loss (ASL) - to quantify the contribution of loss function choice to minority label recovery.
 
-Beyond classification performance, the project includes an interpretability and error analysis pipeline covering embedding geometry and cross-dataset false negative profiling.
+Beyond classification performance, the project includes an interpretability and error analysis pipeline covering embedding geometry, cross-dataset false negative profiling, and per-label threshold calibration to separate decision boundary miscalibration from genuine representational failure.
 
 ---
 
@@ -85,12 +85,15 @@ Both datasets are mapped onto four unified activity labels: **antimicrobial**, *
 
 ## Analysis & Interpretability
 
-Beyond classification metrics, the project includes two interpretability analyses run on both datasets.
+Beyond classification metrics, the project includes three interpretability analyses run on both datasets.
 
 | Script | Description |
 |---|---|
 | `08_embedding_visualization.py` | t-SNE and UMAP projections of sequence embeddings for all three pLM models, with per-label silhouette scores. |
 | `09_error_analysis.py` | Per-label false negative rate profiling and F1 breakdown across models and both datasets. |
+| `10_threshold_calibration.py` | Per-label threshold calibration on the validation set. For each model, dataset, and label, searches a grid of thresholds from 0.10 to 0.90 and selects the value that maximises F1 on the validation split. Applies selected thresholds to the test set without retraining. Outputs optimal thresholds, before/after F1 comparisons, and F1-vs-threshold curves per label. |
+
+**Key calibration finding:** ProtBERT on DRAMP achieves anticancer AUC of 0.890 but near-zero F1 at the default threshold of 0.5. After calibration, anticancer F1 increases from 0.125 to 0.467, confirming that the failure was a threshold artefact rather than a representational deficit. On dbAMP, calibration cannot recover anticancer performance because only four positive test sequences exist, confirming that the zero F1 there reflects data scarcity rather than a threshold problem.
 
 ---
 
@@ -156,6 +159,21 @@ Both analysis scripts require the trained `.pth` weight files in `results/`. Eac
 python scripts/08_embedding_visualization.py   # requires: pip install umap-learn
 python scripts/09_error_analysis.py
 ```
+
+### 8. Threshold calibration
+ 
+Requires the trained `.pth` weight files and the validation CSV files in `data/`. Outputs are saved to `results/threshold_calibration/`.
+
+```bash
+python scripts/10_threshold_calibration.py
+```
+ 
+Outputs include:
+- `optimal_thresholds.csv` — best threshold per model, dataset, and label
+- `metrics_default.csv` — test set performance at threshold 0.5
+- `metrics_calibrated.csv` — test set performance at calibrated thresholds
+- `threshold_f1_curves_*.png` — F1 vs threshold curves per label
+- `threshold_improvement_*.png` — before/after F1 comparison per label
 
 ---
 
